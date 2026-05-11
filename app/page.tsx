@@ -21,6 +21,7 @@ export default function Home() {
   const [livenessResult, setLivenessResult] = useState<Record<string, unknown> | null>(null);
   const [voiceResult, setVoiceResult] = useState<Record<string, unknown> | null>(null);
   const [apiBase, setApiBase] = useState(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
+  const [stepFailure, setStepFailure] = useState<{ step: Step; message: string } | null>(null);
 
   const addLog = useCallback((level: LogEntry["level"], msg: string) => {
     setLogs(prev => [
@@ -31,30 +32,39 @@ export default function Home() {
 
   const handleLivenessComplete = useCallback((result: Record<string, unknown>) => {
     setLivenessResult(result);
-    setLogs(prev => [...prev, {
-      ts: new Date().toISOString().split("T")[1].slice(0, 12),
-      level: "success",
-      msg: `Liveness check passed — ${JSON.stringify(result)}`,
-    }]);
+    if (result.liveness_passed !== true) {
+      const msg = (result.message as string) || "Liveness check failed. Please try again.";
+      setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "error", msg: `Liveness failed — ${msg}` }]);
+      setStepFailure({ step: "liveness", message: msg });
+      return;
+    }
+    setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "success", msg: `Liveness passed ✓` }]);
+    setStepFailure(null);
     setStep("voice");
   }, []);
 
   const handleVoiceComplete = useCallback((result: Record<string, unknown>) => {
     setVoiceResult(result);
-    setLogs(prev => [...prev, {
-      ts: new Date().toISOString().split("T")[1].slice(0, 12),
-      level: "success",
-      msg: `Voice challenge verified — ${JSON.stringify(result)}`,
-    }]);
+    if (result.voice_passed !== true) {
+      const msg = (result.message as string) || "Voice verification failed. Please try again.";
+      setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "error", msg: `Voice failed — ${msg}` }]);
+      setStepFailure({ step: "voice", message: msg });
+      return;
+    }
+    setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "success", msg: `Voice passed ✓` }]);
+    setStepFailure(null);
     setStep("identity");
   }, []);
 
   const handleIdentityComplete = useCallback((result: Record<string, unknown>) => {
-    setLogs(prev => [...prev, {
-      ts: new Date().toISOString().split("T")[1].slice(0, 12),
-      level: "success",
-      msg: `Identity verification complete — ${JSON.stringify(result)}`,
-    }]);
+    if (result.identity_passed !== true) {
+      const msg = (result.message as string) || "Identity verification failed. Please try again.";
+      setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "error", msg: `Identity failed — ${msg}` }]);
+      setStepFailure({ step: "identity", message: msg });
+      return;
+    }
+    setLogs(prev => [...prev, { ts: new Date().toISOString().split("T")[1].slice(0, 12), level: "success", msg: `Identity passed ✓` }]);
+    setStepFailure(null);
     setStep("done");
   }, []);
 
@@ -72,7 +82,16 @@ export default function Home() {
     setLivenessResult(null);
     setVoiceResult(null);
     setLogs([]);
+    setStepFailure(null);
   }, []);
+
+  const handleRetry = useCallback(() => {
+    // Re-mount the current step component by briefly going idle then back
+    const currentStep = stepFailure?.step ?? step;
+    setStepFailure(null);
+    setStep("idle");
+    setTimeout(() => setStep(currentStep), 50);
+  }, [stepFailure, step]);
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--vault-black)" }}>
@@ -210,30 +229,33 @@ export default function Home() {
           )}
 
           {step === "liveness" && (
-            <LivenessCheck
-              sessionId={sessionId}
-              apiBase={apiBase}
-              onComplete={handleLivenessComplete}
-              addLog={addLog}
-            />
+            <>
+              {stepFailure?.step === "liveness" ? (
+                <StepFailureBanner message={stepFailure.message} onRetry={handleRetry} onReset={handleReset} />
+              ) : (
+                <LivenessCheck sessionId={sessionId} apiBase={apiBase} onComplete={handleLivenessComplete} addLog={addLog} />
+              )}
+            </>
           )}
 
           {step === "voice" && (
-            <VoiceChallenge
-              sessionId={sessionId}
-              apiBase={apiBase}
-              onComplete={handleVoiceComplete}
-              addLog={addLog}
-            />
+            <>
+              {stepFailure?.step === "voice" ? (
+                <StepFailureBanner message={stepFailure.message} onRetry={handleRetry} onReset={handleReset} />
+              ) : (
+                <VoiceChallenge sessionId={sessionId} apiBase={apiBase} onComplete={handleVoiceComplete} addLog={addLog} />
+              )}
+            </>
           )}
 
           {step === "identity" && (
-            <IdentityVerify
-              sessionId={sessionId}
-              apiBase={apiBase}
-              onComplete={handleIdentityComplete}
-              addLog={addLog}
-            />
+            <>
+              {stepFailure?.step === "identity" ? (
+                <StepFailureBanner message={stepFailure.message} onRetry={handleRetry} onReset={handleReset} />
+              ) : (
+                <IdentityVerify sessionId={sessionId} apiBase={apiBase} onComplete={handleIdentityComplete} addLog={addLog} />
+              )}
+            </>
           )}
 
           {step === "done" && (
@@ -277,5 +299,81 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+// ─── Step Failure Banner ─────────────────────────────────────────────────────
+
+function StepFailureBanner({
+  message,
+  onRetry,
+  onReset,
+}: {
+  message: string;
+  onRetry: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="animate-fadeup" style={{ maxWidth: "520px" }}>
+      <div style={{
+        padding: "28px",
+        border: "1px solid var(--vault-red)",
+        borderRadius: "2px",
+        background: "rgba(255,61,87,0.06)",
+        marginBottom: "20px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "16px" }}>
+          <div style={{
+            width: "40px", height: "40px", borderRadius: "50%",
+            border: "1px solid var(--vault-red)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(255,61,87,0.1)", flexShrink: 0,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--vault-red)" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </div>
+          <div>
+            <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--vault-red)" }}>
+              Verification Failed
+            </h3>
+            <p style={{ color: "var(--vault-text-dim)", fontSize: "12px", margin: "4px 0 0" }}>
+              This step did not pass
+            </p>
+          </div>
+        </div>
+
+        <div style={{
+          background: "rgba(255,61,87,0.08)",
+          border: "1px solid rgba(255,61,87,0.2)",
+          borderRadius: "2px",
+          padding: "12px 14px",
+          fontSize: "12px",
+          color: "var(--vault-red)",
+          lineHeight: 1.6,
+          marginBottom: "20px",
+        }}>
+          {message}
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            className="vault-btn vault-btn-primary"
+            onClick={onRetry}
+            style={{ flex: 1, minWidth: "120px" }}
+          >
+            TRY AGAIN
+          </button>
+          <button
+            className="vault-btn vault-btn-ghost"
+            onClick={onReset}
+            style={{ flex: 1, minWidth: "120px" }}
+          >
+            RESTART SESSION
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

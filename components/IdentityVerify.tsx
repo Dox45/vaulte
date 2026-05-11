@@ -26,22 +26,41 @@ export default function IdentityVerify({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /** Resize + compress image to JPEG at max 640px wide, quality 0.7 (~80–120 KB) */
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 640;
+        let { width, height } = img;
+        if (width > MAX) { height = Math.round(height * MAX / width); width = MAX; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+      img.src = url;
+    });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) { setSelfie(null); return; }
     if (!file.type.startsWith("image/")) { setError("Please upload a valid image."); return; }
-    if (file.size > 5 * 1024 * 1024) { setError("Image must be less than 5MB."); return; }
+    if (file.size > 10 * 1024 * 1024) { setError("Image must be less than 10MB."); return; }
     setError(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelfie(reader.result as string);
-      addLog("info", `Selfie loaded (${file.name})`);
-    };
-    reader.onerror = () => {
-      setError("Failed to read image.");
-      addLog("error", "Failed to read selfie image");
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      setSelfie(compressed);
+      const kb = Math.round(compressed.length * 3 / 4 / 1024);
+      addLog("info", `Selfie compressed: ~${kb} KB`);
+    } catch {
+      setError("Failed to process image.");
+      addLog("error", "Failed to compress selfie image");
+    }
   };
 
   const resetForm = () => {
