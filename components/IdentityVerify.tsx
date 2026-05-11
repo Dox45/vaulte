@@ -26,346 +26,190 @@ export default function IdentityVerify({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-
-    if (!file) {
-      setSelfie(null);
-      return;
-    }
-
-    // validation
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload a valid image.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be less than 5MB.");
-      return;
-    }
-
+    if (!file) { setSelfie(null); return; }
+    if (!file.type.startsWith("image/")) { setError("Please upload a valid image."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Image must be less than 5MB."); return; }
     setError(null);
-
     const reader = new FileReader();
-
     reader.onload = () => {
       setSelfie(reader.result as string);
       addLog("info", `Selfie loaded (${file.name})`);
     };
-
     reader.onerror = () => {
       setError("Failed to read image.");
       addLog("error", "Failed to read selfie image");
     };
-
     reader.readAsDataURL(file);
   };
 
   const resetForm = () => {
-    setNin("");
-    setFirstName("");
-    setLastName("");
-    setDob("");
-    setSelfie(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setNin(""); setFirstName(""); setLastName(""); setDob(""); setSelfie(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!selfie) {
-      setError("Please upload a selfie image.");
-      return;
-    }
-
-    if (nin.length !== 11) {
-      setError("NIN must be exactly 11 digits.");
-      return;
-    }
-
+    if (!selfie) { setError("Please upload a selfie image."); return; }
+    if (nin.length !== 11) { setError("NIN must be exactly 11 digits."); return; }
     setLoading(true);
     setError(null);
-
     try {
-      addLog(
-        "info",
-        `POST ${apiBase}/vendor/verify-identity`
-      );
-
-      const payload = {
-        session_id: sessionId,
-        nin,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        date_of_birth: dob,
-        selfie_image: selfie,
-      };
-
-      addLog(
-        "info",
-        `Submitting identity verification for ${firstName} ${lastName}`
-      );
-
-      const res = await fetch(
-        `${apiBase}/vendor/verify-identity`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
+      addLog("info", `POST ${apiBase}/vendor/verify-identity`);
+      const res = await fetch(`${apiBase}/vendor/verify-identity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          nin,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          date_of_birth: dob,
+          selfie_image: selfie,
+        }),
+      });
       let data: any = {};
-
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
-
-      if (!res.ok) {
-        throw new Error(
-          data?.detail ||
-            data?.message ||
-            `HTTP ${res.status}`
-        );
-      }
-
-      addLog(
-        "success",
-        `Identity verified → ${JSON.stringify(data)}`
-      );
-
+      try { data = await res.json(); } catch { throw new Error("Invalid server response"); }
+      if (!res.ok) throw new Error(data?.detail || data?.message || `HTTP ${res.status}`);
+      addLog("success", `Identity verified → ${JSON.stringify(data)}`);
       onComplete(data);
-
       resetForm();
     } catch (err: any) {
-      console.error(err);
-
-      const message =
-        err?.message || "Identity verification failed";
-
+      const message = err?.message || "Identity verification failed";
       setError(message);
-
-      addLog(
-        "error",
-        `Identity verify failed: ${message}`
-      );
+      addLog("error", `Identity verify failed: ${message}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        maxWidth: 420,
-        margin: "0 auto",
-        padding: 24,
-        background: "#181818",
-        borderRadius: 12,
-        border: "1px solid #2a2a2a",
-      }}
-    >
-      <h3
-        style={{
-          color: "#fff",
-          marginBottom: 20,
-          fontSize: 22,
-        }}
-      >
-        Step 3: NIN Identity Verification
-      </h3>
-
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            display: "block",
-            color: "#ccc",
-            marginBottom: 6,
-          }}
-        >
-          NIN
-        </label>
-
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={nin}
-          onChange={(e) =>
-            setNin(
-              e.target.value.replace(/\D/g, "").slice(0, 11)
-            )
-          }
-          placeholder="12345678901"
-          required
-          style={inputStyle}
-        />
+    <div className="animate-fadeup" style={{ maxWidth: "100%", width: "100%" }}>
+      <div style={{ marginBottom: "24px" }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(20px, 6vw, 28px)", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>
+          Identity Verification
+        </h2>
+        <p style={{ color: "var(--vault-text-dim)", fontSize: "12px" }}>
+          NIN verification via Youverify — step 3 of 3
+        </p>
       </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            display: "block",
-            color: "#ccc",
-            marginBottom: 6,
-          }}
-        >
-          First Name
-        </label>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px", maxWidth: "480px" }}>
 
-        <input
-          type="text"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-          placeholder="John"
-          style={inputStyle}
-        />
-      </div>
+        {/* NIN */}
+        <div>
+          <label style={labelStyle}>NIN</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={nin}
+            onChange={e => setNin(e.target.value.replace(/\D/g, "").slice(0, 11))}
+            placeholder="11-digit NIN"
+            required
+            style={inputStyle}
+          />
+        </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            display: "block",
-            color: "#ccc",
-            marginBottom: 6,
-          }}
-        >
-          Last Name
-        </label>
+        {/* First + Last name row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div>
+            <label style={labelStyle}>First Name</label>
+            <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required placeholder="John" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Last Name</label>
+            <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} required placeholder="Doe" style={inputStyle} />
+          </div>
+        </div>
 
-        <input
-          type="text"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-          placeholder="Doe"
-          style={inputStyle}
-        />
-      </div>
+        {/* Date of birth */}
+        <div>
+          <label style={labelStyle}>Date of Birth</label>
+          <input type="date" value={dob} onChange={e => setDob(e.target.value)} required style={inputStyle} />
+        </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            display: "block",
-            color: "#ccc",
-            marginBottom: 6,
-          }}
-        >
-          Date of Birth
-        </label>
-
-        <input
-          type="date"
-          value={dob}
-          onChange={(e) => setDob(e.target.value)}
-          required
-          style={inputStyle}
-        />
-      </div>
-
-      <div style={{ marginBottom: 18 }}>
-        <label
-          style={{
-            display: "block",
-            color: "#ccc",
-            marginBottom: 6,
-          }}
-        >
-          Selfie Image
-        </label>
-
-        <input
-          type="file"
-          accept="image/*"
-          capture="user"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          required
-          style={{
-            color: "#ddd",
-          }}
-        />
-
-        {selfie && (
+        {/* Selfie */}
+        <div>
+          <label style={labelStyle}>Selfie Image</label>
           <div
             style={{
-              marginTop: 12,
+              border: "1px dashed var(--vault-border)",
+              borderRadius: "2px",
+              padding: "16px",
               textAlign: "center",
+              cursor: "pointer",
+              background: selfie ? "rgba(0,230,118,0.04)" : "var(--vault-surface)",
+              borderColor: selfie ? "var(--vault-green)" : "var(--vault-border)",
+              transition: "all 0.2s",
             }}
+            onClick={() => fileInputRef.current?.click()}
           >
-            <img
-              src={selfie}
-              alt="Selfie preview"
-              style={{
-                width: 120,
-                height: 120,
-                objectFit: "cover",
-                borderRadius: 12,
-                border: "2px solid #333",
-              }}
-            />
+            {selfie ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                <img src={selfie} alt="Selfie preview" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%", border: "2px solid var(--vault-green)" }} />
+                <span style={{ fontSize: "11px", color: "var(--vault-green)" }}>✓ Image selected — tap to change</span>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: "24px", marginBottom: "8px" }}>📷</div>
+                <div style={{ fontSize: "12px", color: "var(--vault-text-dim)" }}>Tap to upload or take a selfie</div>
+              </div>
+            )}
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            capture="user"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+        </div>
+
+        {error && (
+          <div style={{
+            background: "rgba(255,61,87,0.08)",
+            color: "var(--vault-red)",
+            padding: "10px 14px",
+            borderRadius: "2px",
+            border: "1px solid var(--vault-red)",
+            fontSize: "12px",
+          }}>
+            {error}
           </div>
         )}
-      </div>
 
-      {error && (
-        <div
-          style={{
-            background: "#3a1212",
-            color: "#ff9b9b",
-            padding: 10,
-            borderRadius: 8,
-            marginBottom: 16,
-            fontSize: 14,
-          }}
+        <button
+          type="submit"
+          disabled={loading}
+          className="vault-btn vault-btn-primary"
+          style={{ width: "100%", opacity: loading ? 0.6 : 1, cursor: loading ? "not-allowed" : "pointer" }}
         >
-          {error}
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          width: "100%",
-          padding: 12,
-          background: loading ? "#666" : "#00e676",
-          color: "#181818",
-          border: "none",
-          borderRadius: 8,
-          fontWeight: 700,
-          fontSize: 15,
-          cursor: loading ? "not-allowed" : "pointer",
-          transition: "0.2s ease",
-        }}
-      >
-        {loading ? "Verifying..." : "Verify Identity"}
-      </button>
-    </form>
+          {loading ? "Verifying..." : "Verify Identity"}
+        </button>
+      </form>
+    </div>
   );
 }
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  color: "var(--vault-text-dim)",
+  fontSize: "10px",
+  letterSpacing: "0.1em",
+  marginBottom: "6px",
+};
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #333",
-  background: "#101010",
-  color: "#fff",
-  fontSize: 14,
+  borderRadius: "2px",
+  border: "1px solid var(--vault-border)",
+  background: "var(--vault-surface)",
+  color: "var(--vault-white)",
+  fontSize: "13px",
   outline: "none",
+  fontFamily: "DM Mono, monospace",
 };

@@ -330,7 +330,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="animate-fadeup" style={{ maxWidth: "540px" }}>
+    <div className="animate-fadeup" style={{ maxWidth: "100%", width: "100%" }}>
       <div style={{ marginBottom: "24px" }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>
           Voice Challenge

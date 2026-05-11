@@ -387,7 +387,7 @@ export default function LivenessCheck({ sessionId, apiBase, onComplete, addLog }
   const progressPct = { init: 0, blink: 20, turn: 50, capturing: 70, submitting: 85, done: 100, error: 0 }[phase];
 
   return (
-    <div className="animate-fadeup" style={{ maxWidth: "620px" }}>
+    <div className="animate-fadeup" style={{ maxWidth: "100%", width: "100%" }}>
       <div style={{ marginBottom: "24px" }}>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>
           Liveness Check
