@@ -11,27 +11,51 @@ interface Props {
 
 type Phase = "starting" | "ready" | "recording" | "processing" | "verifying" | "done" | "error";
 
-const RECORD_DURATION_MS = 8000;
-const SAMPLE_RATE = 16000;
-// AssemblyAI requires chunks between 50ms and 1000ms.
-// 250ms is safe and gives good latency.
-const CHUNK_MS = 250;
+const RECORD_DURATION_MS = 10000;
+const TARGET_SAMPLE_RATE = 16000;
+
+// ─── PCM helpers ─────────────────────────────────────────────────────────────
+
+/** Downsample a Float32 buffer from nativeSR → targetSR */
+function downsampleBuffer(buf: Float32Array, nativeSR: number, targetSR: number): Float32Array {
+  if (nativeSR === targetSR) return buf;
+  const ratio  = nativeSR / targetSR;
+  const length = Math.round(buf.length / ratio);
+  const result = new Float32Array(length);
+  for (let i = 0; i < length; i++) {
+    const idx = Math.min(Math.floor(i * ratio), buf.length - 1);
+    result[i] = buf[idx];
+  }
+  return result;
+}
+
+/** Convert Float32 samples (−1…1) to Int16 PCM bytes */
+function float32ToPCM16(buf: Float32Array): ArrayBuffer {
+  const ab  = new ArrayBuffer(buf.length * 2);
+  const view = new DataView(ab);
+  for (let i = 0; i < buf.length; i++) {
+    const s = Math.max(-1, Math.min(1, buf[i]));
+    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return ab;
+}
 
 export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog }: Props) {
-  const [phase, setPhase]                       = useState<Phase>("starting");
-  const [challengePhrase, setChallengePhrase]   = useState<string>("");
-  const [transcript, setTranscript]             = useState<string>("");
-  const [confidence, setConfidence]             = useState<number>(0);
-  const [timeLeft, setTimeLeft]                 = useState(RECORD_DURATION_MS / 1000);
-  const [error, setError]                       = useState<string | null>(null);
-  const [waveHeights, setWaveHeights]           = useState<number[]>(Array(20).fill(4));
-  const [apiResponse, setApiResponse]           = useState<Record<string, unknown> | null>(null);
-  const [useSimulation, setUseSimulation]       = useState(false);
+  const [phase, setPhase]                     = useState<Phase>("starting");
+  const [challengePhrase, setChallengePhrase] = useState<string>("");
+  const [transcript, setTranscript]           = useState<string>("");
+  const [confidence, setConfidence]           = useState<number>(0);
+  const [timeLeft, setTimeLeft]               = useState(RECORD_DURATION_MS / 1000);
+  const [error, setError]                     = useState<string | null>(null);
+  const [waveHeights, setWaveHeights]         = useState<number[]>(Array(20).fill(4));
+  const [apiResponse, setApiResponse]         = useState<Record<string, unknown> | null>(null);
+  const [useSimulation, setUseSimulation]     = useState(false);
   const [manualTranscript, setManualTranscript] = useState("");
 
   const socketRef          = useRef<WebSocket | null>(null);
-  const mediaRecorderRef   = useRef<MediaRecorder | null>(null);
   const streamRef          = useRef<MediaStream | null>(null);
+  const audioCtxRef        = useRef<AudioContext | null>(null);
+  const processorRef       = useRef<ScriptProcessorNode | null>(null);
   const timerRef           = useRef<ReturnType<typeof setInterval> | null>(null);
   const waveRef            = useRef<ReturnType<typeof setInterval> | null>(null);
   const finalTranscriptRef = useRef<string>("");
@@ -39,7 +63,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
   const terminateTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const terminatedRef      = useRef(false);
   const verifiedRef        = useRef(false);
-  const stoppedRef         = useRef(false); // prevents double-fire from interval
+  const stoppedRef         = useRef(false);
   const verifyRef          = useRef<((t: string, c: number, m: boolean) => Promise<void>) | null>(null);
 
   // ─── Waveform ──────────────────────────────────────────────────────────────
@@ -55,28 +79,23 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
     setWaveHeights(Array(20).fill(4));
   }, []);
 
-  // ─── Cleanup mic + recorder ───────────────────────────────────────────────
+  // ─── Stop audio pipeline ─────────────────────────────────────────────────
 
-  const stopMediaRecorder = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    mediaRecorderRef.current = null;
+  const stopAudio = useCallback(() => {
+    processorRef.current?.disconnect();
+    processorRef.current = null;
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
   }, []);
 
-  // ─── Verify (idempotent) ──────────────────────────────────────────────────
+  // ─── Verify (idempotent) ─────────────────────────────────────────────────
 
   const verify = useCallback(async (t: string, c: number, multiSpeaker: boolean) => {
     if (verifiedRef.current) return;
     verifiedRef.current = true;
-
-    if (terminateTimerRef.current) {
-      clearTimeout(terminateTimerRef.current);
-      terminateTimerRef.current = null;
-    }
-
+    if (terminateTimerRef.current) { clearTimeout(terminateTimerRef.current); terminateTimerRef.current = null; }
     setPhase("verifying");
     try {
       addLog("info", `POST /vendor/voice/verify — transcript: "${t}"`);
@@ -106,27 +125,25 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
 
   useEffect(() => { verifyRef.current = verify; }, [verify]);
 
-  // ─── Terminate WS (idempotent) ────────────────────────────────────────────
+  // ─── Terminate WS ────────────────────────────────────────────────────────
 
   const terminateSession = useCallback(() => {
     if (terminatedRef.current) return;
     terminatedRef.current = true;
-
+    stopAudio();
     const ws = socketRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       verifyRef.current?.(finalTranscriptRef.current, finalConfidenceRef.current, false);
       return;
     }
-
     addLog("info", "Sending Terminate to AssemblyAI");
     ws.send(JSON.stringify({ type: "Terminate" }));
-
     terminateTimerRef.current = setTimeout(() => {
       addLog("warn", "Termination timeout — force-verifying");
       ws.close();
       verifyRef.current?.(finalTranscriptRef.current, finalConfidenceRef.current, false);
     }, 4000);
-  }, [addLog]);
+  }, [addLog, stopAudio]);
 
   // ─── Mount: fetch challenge phrase ───────────────────────────────────────
 
@@ -143,7 +160,6 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
         if (cancelled) return;
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
         setChallengePhrase(data.challenge_phrase);
-        // Schedule log after render, not during
         setTimeout(() => addLog("success", `Challenge phrase: "${data.challenge_phrase}"`), 0);
         setPhase("ready");
       } catch (err: unknown) {
@@ -160,10 +176,9 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Start recording ──────────────────────────────────────────────────────
+  // ─── Start recording ─────────────────────────────────────────────────────
 
   const startRecording = useCallback(async () => {
-    // Reset all state and guards
     terminatedRef.current = false;
     verifiedRef.current   = false;
     stoppedRef.current    = false;
@@ -181,21 +196,15 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
       addLog("info", "[SIM] Recording started");
       timerRef.current = setInterval(() => {
         setTimeLeft(t => {
-          if (t <= 1) {
-            clearInterval(timerRef.current!);
-            stopWaveform();
-            setPhase("processing");
-            return 0;
-          }
+          if (t <= 1) { clearInterval(timerRef.current!); stopWaveform(); setPhase("processing"); return 0; }
           return t - 1;
         });
       }, 1000);
       return;
     }
 
-    // ── Real path ──
+    // ── Real path: PCM16 via Web Audio API ──
     try {
-      // Fresh token at click time
       addLog("info", "Fetching fresh token...");
       const tokenRes  = await fetch(`${apiBase}/vendor/voice/start`, {
         method: "POST",
@@ -204,16 +213,31 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
       });
       const tokenData = await tokenRes.json();
       if (!tokenRes.ok) throw new Error(tokenData.detail || `HTTP ${tokenRes.status}`);
-      const freshWsUrl: string = tokenData.websocket_url;
+      const wsUrl: string = tokenData.websocket_url;
       addLog("info", "Token obtained — opening WebSocket");
 
-      // Request mic before opening socket so permission prompt doesn't delay connection
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Mic stream
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       streamRef.current = stream;
 
-      const ws = new WebSocket(freshWsUrl);
-      socketRef.current = ws;
+      // AudioContext — prefer 16kHz, fallback to device native rate
+      const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      const ctx = new AudioCtx({ sampleRate: TARGET_SAMPLE_RATE });
+      audioCtxRef.current = ctx;
+      const nativeSR = ctx.sampleRate;
+      addLog("info", `AudioContext SR: ${nativeSR} Hz`);
 
+      // ScriptProcessor: 4096-sample buffer → ~256ms chunks at 16kHz
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(processor);
+      processor.connect(ctx.destination); // must be connected to fire onaudioprocess
+
+      // WebSocket
+      const ws = new WebSocket(wsUrl);
+      ws.binaryType = "arraybuffer";
+      socketRef.current = ws;
       ws.onerror = () => addLog("error", "WebSocket error");
       ws.onclose = (e) => addLog("info", `WS closed — code: ${e.code}`);
 
@@ -221,12 +245,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
         try {
           const msg = JSON.parse(raw as string);
           addLog("info", `WS ← ${JSON.stringify(msg)}`);
-
-          if (msg.error) {
-            addLog("error", `AssemblyAI error: ${msg.error}`);
-            return;
-          }
-
+          if (msg.error) { addLog("error", `AssemblyAI error: ${msg.error}`); return; }
           if (msg.type === "Turn") {
             const text: string = msg.transcript ?? "";
             const conf: number = msg.end_of_turn_confidence ?? msg.confidence ?? 1.0;
@@ -239,10 +258,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
             }
           } else if (msg.type === "Termination") {
             addLog("info", "Termination received — verifying");
-            if (terminateTimerRef.current) {
-              clearTimeout(terminateTimerRef.current);
-              terminateTimerRef.current = null;
-            }
+            if (terminateTimerRef.current) { clearTimeout(terminateTimerRef.current); terminateTimerRef.current = null; }
             ws.close();
             verifyRef.current?.(finalTranscriptRef.current, finalConfidenceRef.current, false);
           }
@@ -250,36 +266,16 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
       };
 
       ws.onopen = () => {
-        addLog("info", "WebSocket connected — starting MediaRecorder");
+        addLog("info", `WebSocket connected — streaming PCM16 @ ${TARGET_SAMPLE_RATE} Hz`);
 
-        // Use native MediaRecorder with timeslice to guarantee chunk size.
-        // opus at 16kHz produces ~1.5kB per 250ms chunk — well within limits.
-        // We pick the first supported mimeType from the list.
-        const mimeType = [
-          "audio/webm;codecs=opus",
-          "audio/webm",
-          "audio/ogg;codecs=opus",
-          "",
-        ].find(m => m === "" || MediaRecorder.isTypeSupported(m)) ?? "";
-
-        const recorder = new MediaRecorder(
-          stream,
-          mimeType ? { mimeType } : undefined,
-        );
-        mediaRecorderRef.current = recorder;
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            e.data.arrayBuffer().then(buf => {
-              if (ws.readyState === WebSocket.OPEN) ws.send(buf);
-            });
-          }
+        // Send PCM16 chunks from ScriptProcessor
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          const input    = e.inputBuffer.getChannelData(0);
+          const downsampled = downsampleBuffer(input, nativeSR, TARGET_SAMPLE_RATE);
+          const pcm      = float32ToPCM16(downsampled);
+          ws.send(pcm);
         };
-
-        recorder.onerror = (e) => addLog("error", `MediaRecorder error: ${e}`);
-
-        // timeslice = CHUNK_MS: browser fires ondataavailable every 250ms
-        recorder.start(CHUNK_MS);
 
         setPhase("recording");
         setTimeLeft(RECORD_DURATION_MS / 1000);
@@ -293,7 +289,6 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
               stoppedRef.current = true;
               clearInterval(timerRef.current!);
               stopWaveform();
-              stopMediaRecorder();
               terminateSession();
               setPhase("processing");
               return 0;
@@ -309,7 +304,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
       setError(msg);
       setPhase("error");
     }
-  }, [sessionId, apiBase, addLog, useSimulation, startWaveform, stopWaveform, stopMediaRecorder, terminateSession]);
+  }, [sessionId, apiBase, addLog, useSimulation, startWaveform, stopWaveform, terminateSession]);
 
   // ─── Phase helpers ────────────────────────────────────────────────────────
 
@@ -336,7 +331,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
           Voice Challenge
         </h2>
         <p style={{ color: "var(--vault-text-dim)", fontSize: "12px" }}>
-          Real-time voice transcription via AssemblyAI — step 2 of 2
+          Real-time voice transcription via AssemblyAI — step 2 of 3
         </p>
       </div>
 
@@ -349,7 +344,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
       {challengePhrase && (
         <div style={{ padding: "20px 24px", border: "1px solid var(--vault-green)", borderRadius: "2px", background: "rgba(0,230,118,0.04)", marginBottom: "24px" }}>
           <div style={{ fontSize: "10px", color: "var(--vault-text-dim)", letterSpacing: "0.1em", marginBottom: "10px" }}>SPEAK THIS PHRASE EXACTLY</div>
-          <p style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: "22px", color: "var(--vault-white)", margin: 0, lineHeight: 1.4 }}>
+          <p style={{ fontFamily: "'Instrument Serif', serif", fontStyle: "italic", fontSize: "clamp(16px, 5vw, 22px)", color: "var(--vault-white)", margin: 0, lineHeight: 1.4 }}>
             &ldquo;{challengePhrase}&rdquo;
           </p>
         </div>
