@@ -656,7 +656,10 @@ export default function LivenessCheck({ sessionId, apiBase, onComplete, addLog }
     async function fetchChallenge() {
       try {
         addLog("info", `GET ${apiBase}/vendor/liveness/challenge`);
-        const res = await fetch(`${apiBase}/vendor/liveness/challenge?session_id=${sessionId}`);
+        const res = await fetch(`${apiBase}/vendor/liveness/challenge?session_id=${sessionId}`, {
+          headers: { "ngrok-skip-browser-warning": "1" },
+          mode: "cors"
+        });
         if (!res.ok) throw new Error(`Challenge fetch failed: HTTP ${res.status}`);
         const data = await res.json() as { sequence: ChallengeStep[]; nonce: string };
 
@@ -932,7 +935,11 @@ export default function LivenessCheck({ sessionId, apiBase, onComplete, addLog }
       addLog("info", `POST ${apiBase}/vendor/liveness`);
       const res = await fetch(`${apiBase}/vendor/liveness`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1"
+        },
+        mode: "cors",
         body: JSON.stringify({
           session_id: sessionId,
           nonce: nonceRef.current,
