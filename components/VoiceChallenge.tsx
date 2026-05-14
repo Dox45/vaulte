@@ -5,9 +5,14 @@ import type { LogEntry } from "@/app/page";
 interface Props {
   sessionId: string;
   apiBase: string;
+  endpoints?: {
+    start?: string;
+    verify?: string;
+  };
   onComplete: (result: Record<string, unknown>) => void;
   addLog: (level: LogEntry["level"], msg: string) => void;
 }
+
 
 type Phase = "starting" | "ready" | "recording" | "processing" | "verifying" | "done" | "error";
 
@@ -40,7 +45,14 @@ function float32ToPCM16(buf: Float32Array): ArrayBuffer {
   return ab;
 }
 
-export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog }: Props) {
+export default function VoiceChallenge({ 
+  sessionId, 
+  apiBase, 
+  endpoints = { start: "/vendor/voice/start", verify: "/vendor/voice/verify" },
+  onComplete, 
+  addLog 
+}: Props) {
+
   const [phase, setPhase]                     = useState<Phase>("starting");
   const [challengePhrase, setChallengePhrase] = useState<string>("");
   const [transcript, setTranscript]           = useState<string>("");
@@ -98,8 +110,8 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
     if (terminateTimerRef.current) { clearTimeout(terminateTimerRef.current); terminateTimerRef.current = null; }
     setPhase("verifying");
     try {
-      addLog("info", `POST /vendor/voice/verify — transcript: "${t}"`);
-      const res = await fetch(`${apiBase}/vendor/voice/verify`, {
+      addLog("info", `POST ${endpoints.verify} — transcript: "${t}"`);
+      const res = await fetch(`${apiBase}${endpoints.verify}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -151,7 +163,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
     let cancelled = false;
     (async () => {
       try {
-        const res  = await fetch(`${apiBase}/vendor/voice/start`, {
+        const res  = await fetch(`${apiBase}${endpoints.start}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId }),
@@ -206,7 +218,7 @@ export default function VoiceChallenge({ sessionId, apiBase, onComplete, addLog 
     // ── Real path: PCM16 via Web Audio API ──
     try {
       addLog("info", "Fetching fresh token...");
-      const tokenRes  = await fetch(`${apiBase}/vendor/voice/start`, {
+      const tokenRes  = await fetch(`${apiBase}${endpoints.start}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId }),

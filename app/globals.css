@@ -1,14 +1,73 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&display=swap');
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer utilities {
+  .hero-mesh {
+    background: radial-gradient(at 0% 0%, rgba(34, 88, 195, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(168, 85, 247, 0.03) 0px, transparent 50%);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.04);
+  }
+
+
+  .primary-gradient {
+    background: linear-gradient(135deg, #2258c4 0%, #0040a1 100%);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+}
+
+@layer base {
+  :root {
+    --bg-0: #FAF9F5;
+    --bg-000: #FAF9F5;
+    --bg-100: #FFFFFF;
+    --bg-200: #F0EEE6;
+    --bg-300: #DDDDDD;
+    --text-100: #1F1E1D;
+    --text-200: #3D3D3A;
+    --text-300: #73726C;
+    --text-400: #888888;
+    --text-500: #999999;
+    --accent: #D97757;
+    --accent-hover: #C6613F;
+    --ease-silk: cubic-bezier(0.2, 0.0, 0, 1.0);
+  }
+
+  .dark {
+    --bg-0: #212121;
+    --bg-000: #212121;
+    --bg-100: #262624;
+    --bg-200: #30302E;
+    --bg-300: #454540;
+    --text-100: #ECECEC;
+    --text-200: #E1E1E0;
+    --text-300: #B4B4B4;
+    --text-400: #8A8A88;
+    --text-500: #6B6B65;
+    --accent: #D2996E;
+    --accent-hover: #E5AA7F;
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 
 :root {
   --vault-black: #0a0a0a;
   --vault-white: #f5f2ec;
   --vault-green: #00e676;
-  --vault-green-dim: rgba(0,230,118,0.1);
+  --vault-green-dim: rgba(0, 230, 118, 0.1);
   --vault-amber: #ffab00;
   --vault-red: #ff3d57;
   --vault-surface: #111111;
@@ -17,9 +76,41 @@
   --vault-text-dim: #888;
 }
 
-* { box-sizing: border-box; }
+.theme-professional {
+  --v-bg: #f0f4f8;
+  --v-text: #1a202c;
+  --v-primary: #6366f1;
+  /* Indigo/Purple */
+  --v-secondary: #3b82f6;
 
-html, body {
+
+  /* Blue */
+  --v-surface: rgba(255, 255, 255, 0.8);
+  --v-border: rgba(99, 102, 241, 0.15);
+  --v-muted: #718096;
+  --v-success: #10b981;
+  --v-error: #ef4444;
+
+  /* Map existing component variables */
+  --vault-black: #f0f4f8;
+  --vault-white: #1a202c;
+  --vault-green: var(--v-primary);
+  --vault-green-dim: rgba(99, 102, 241, 0.1);
+  --vault-surface: #ffffff;
+  --vault-border: rgba(99, 102, 241, 0.1);
+  --vault-text-dim: var(--v-muted);
+}
+
+
+
+* {
+  box-sizing: border-box;
+}
+
+/*
+
+html,
+body {
   background: var(--vault-black);
   color: var(--vault-white);
   font-family: 'DM Mono', monospace;
@@ -27,39 +118,70 @@ html, body {
   padding: 0;
   min-height: 100vh;
   overflow-x: hidden;
-}
+} */
 
-body::before {
+/* body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
   pointer-events: none;
   z-index: 9999;
-}
+} */
 
 @keyframes fadeup {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes blink-cursor {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes recording-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 61, 87, 0.7); }
-  50% { box-shadow: 0 0 0 16px rgba(255, 61, 87, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 61, 87, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 0 16px rgba(255, 61, 87, 0);
+  }
 }
 
 @keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.animate-fadeup { animation: fadeup 0.5s ease forwards; }
-.animate-spin-slow { animation: spin-slow 3s linear infinite; }
+.animate-fadeup {
+  animation: fadeup 0.5s ease forwards;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
 
 .cursor-blink::after {
   content: '_';
@@ -67,10 +189,16 @@ body::before {
   color: var(--vault-green);
 }
 
-.recording-pulse { animation: recording-pulse 1.5s ease-in-out infinite; }
+.recording-pulse {
+  animation: recording-pulse 1.5s ease-in-out infinite;
+}
 
 /* ── Mobile viewport meta helper ───────────────────────────── */
-img, video, canvas { max-width: 100%; }
+/* img,
+video,
+canvas {
+  max-width: 100%;
+} */
 
 /* ── Vault button base ──────────────────────────────────────── */
 .vault-btn {
@@ -84,6 +212,7 @@ img, video, canvas { max-width: 100%; }
   transition: all 0.2s;
   border-radius: 2px;
 }
+
 .vault-btn-primary {
   background: var(--vault-green);
   color: #0a0a0a;
@@ -91,7 +220,11 @@ img, video, canvas { max-width: 100%; }
   padding: 12px 28px;
   font-size: 12px;
 }
-.vault-btn-primary:hover { filter: brightness(1.1); }
+
+.vault-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
 .vault-btn-ghost {
   background: transparent;
   color: var(--vault-text-dim);
@@ -99,7 +232,11 @@ img, video, canvas { max-width: 100%; }
   padding: 10px 20px;
   font-size: 11px;
 }
-.vault-btn-ghost:hover { border-color: var(--vault-green); color: var(--vault-green); }
+
+.vault-btn-ghost:hover {
+  border-color: var(--vault-green);
+  color: var(--vault-green);
+}
 
 /* ── Responsive layout helpers ──────────────────────────────── */
 .vault-main-grid {
@@ -117,6 +254,7 @@ img, video, canvas { max-width: 100%; }
   .vault-main-grid {
     grid-template-columns: 1fr;
   }
+
   .vault-log-panel {
     border-left: none;
     border-top: 1px solid var(--vault-border);

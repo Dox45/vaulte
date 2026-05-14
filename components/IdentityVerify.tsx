@@ -5,16 +5,20 @@ import { useState, useRef } from "react";
 interface Props {
   sessionId: string;
   apiBase: string;
+  endpoint?: string;
   onComplete: (result: Record<string, unknown>) => void;
   addLog: (level: string, msg: string) => void;
 }
 
+
 export default function IdentityVerify({
   sessionId,
   apiBase,
+  endpoint = "/vendor/verify-identity",
   onComplete,
   addLog,
 }: Props) {
+
   const [nin, setNin] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -75,8 +79,9 @@ export default function IdentityVerify({
     setLoading(true);
     setError(null);
     try {
-      addLog("info", `POST ${apiBase}/vendor/verify-identity`);
-      const res = await fetch(`${apiBase}/vendor/verify-identity`, {
+      addLog("info", `POST ${apiBase}${endpoint}`);
+      const res = await fetch(`${apiBase}${endpoint}`, {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
