@@ -44,12 +44,12 @@ export function BenchmarkLandingPage() {
           </div>
           <div className="flex items-center gap-[1.5rem]">
             <button 
-              onClick={() => router.push('/signin')}
+              onClick={() => router.push('/developer/signin')}
               className="text-[14px] tracking-wide text-[#3b494b] hover:text-[#151d1e] transition-colors">
               Sign In
             </button>
             <button 
-              onClick={() => router.push('/signup')}
+              onClick={() => router.push('/developer/signup')}
               className="bg-[#635bff] text-[#ffffff] px-[1.5rem] py-[0.5rem] text-[12px] font-medium tracking-[0.05em] uppercase rounded-lg shadow-[0_0_20px_rgba(99,91,255,0.15)] hover:shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all font-mono">
               Get API Key
             </button>
@@ -77,7 +77,7 @@ export function BenchmarkLandingPage() {
               </p>
               <div className="flex flex-wrap gap-[1.5rem] mt-[1rem]">
                 <button 
-                  onClick={() => router.push('/signup')}
+                  onClick={() => router.push('/developer/signup')}
                   className="bg-[#635bff] text-[#ffffff] px-[2.5rem] py-[1.5rem] text-[12px] font-medium tracking-[0.05em] uppercase rounded-lg shadow-[0_0_20px_rgba(99,91,255,0.15)] hover:shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all font-mono">
                   Get Started for Free
                 </button>
@@ -125,7 +125,7 @@ export function BenchmarkLandingPage() {
                 Virtual Infrastructure
               </h3>
               <p className="text-[14px] leading-[1.5] text-[#3b494b]">
-                No more managing complex virtual account ledgers. Our dynamic vaulting system handles multi-currency distributions instantly.
+                No more managing complex virtual account ledgers. Our dynamic benchmarking system handles multi-currency distributions instantly.
               </p>
             </div>
             {/* Card 3 */}
@@ -206,7 +206,9 @@ export function BenchmarkLandingPage() {
               Ready to upgrade your commerce infrastructure?
             </h2>
             <div className="flex flex-wrap justify-center gap-[1.5rem]">
-              <button className="bg-[#635bff] text-[#ffffff] px-[2.5rem] py-[1.5rem] text-[12px] font-medium tracking-[0.05em] uppercase rounded-lg shadow-[0_0_20px_rgba(99,91,255,0.15)] hover:shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all font-mono">
+              <button 
+                onClick={() => router.push('/developer/signup')}
+                className="bg-[#635bff] text-[#ffffff] px-[2.5rem] py-[1.5rem] text-[12px] font-medium tracking-[0.05em] uppercase rounded-lg shadow-[0_0_20px_rgba(99,91,255,0.15)] hover:shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all font-mono">
                 Get Started for Free
               </button>
               <button className="border border-[#b9cacb] text-[#151d1e] px-[2.5rem] py-[1.5rem] text-[12px] font-medium tracking-[0.05em] uppercase rounded-lg hover:bg-[#e7eff0] transition-all font-mono">

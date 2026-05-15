@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { LogEntry } from "@/app/page";
+
 
 interface Props {
   sessionId: string;
@@ -11,6 +11,12 @@ interface Props {
   };
   onComplete: (result: Record<string, unknown>) => void;
   addLog: (level: LogEntry["level"], msg: string) => void;
+}
+
+interface LogEntry {
+  ts: string;
+  level: "info" | "success" | "error" | "warn";
+  msg: string;
 }
 
 
@@ -24,7 +30,7 @@ const TARGET_SAMPLE_RATE = 16000;
 /** Downsample a Float32 buffer from nativeSR → targetSR */
 function downsampleBuffer(buf: Float32Array, nativeSR: number, targetSR: number): Float32Array {
   if (nativeSR === targetSR) return buf;
-  const ratio  = nativeSR / targetSR;
+  const ratio = nativeSR / targetSR;
   const length = Math.round(buf.length / ratio);
   const result = new Float32Array(length);
   for (let i = 0; i < length; i++) {
@@ -36,7 +42,7 @@ function downsampleBuffer(buf: Float32Array, nativeSR: number, targetSR: number)
 
 /** Convert Float32 samples (−1…1) to Int16 PCM bytes */
 function float32ToPCM16(buf: Float32Array): ArrayBuffer {
-  const ab  = new ArrayBuffer(buf.length * 2);
+  const ab = new ArrayBuffer(buf.length * 2);
   const view = new DataView(ab);
   for (let i = 0; i < buf.length; i++) {
     const s = Math.max(-1, Math.min(1, buf[i]));
@@ -45,38 +51,38 @@ function float32ToPCM16(buf: Float32Array): ArrayBuffer {
   return ab;
 }
 
-export default function VoiceChallenge({ 
-  sessionId, 
-  apiBase, 
+export default function VoiceChallenge({
+  sessionId,
+  apiBase,
   endpoints = { start: "/vendor/voice/start", verify: "/vendor/voice/verify" },
-  onComplete, 
-  addLog 
+  onComplete,
+  addLog
 }: Props) {
 
-  const [phase, setPhase]                     = useState<Phase>("starting");
+  const [phase, setPhase] = useState<Phase>("starting");
   const [challengePhrase, setChallengePhrase] = useState<string>("");
-  const [transcript, setTranscript]           = useState<string>("");
-  const [confidence, setConfidence]           = useState<number>(0);
-  const [timeLeft, setTimeLeft]               = useState(RECORD_DURATION_MS / 1000);
-  const [error, setError]                     = useState<string | null>(null);
-  const [waveHeights, setWaveHeights]         = useState<number[]>(Array(20).fill(4));
-  const [apiResponse, setApiResponse]         = useState<Record<string, unknown> | null>(null);
-  const [useSimulation, setUseSimulation]     = useState(false);
+  const [transcript, setTranscript] = useState<string>("");
+  const [confidence, setConfidence] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState(RECORD_DURATION_MS / 1000);
+  const [error, setError] = useState<string | null>(null);
+  const [waveHeights, setWaveHeights] = useState<number[]>(Array(20).fill(4));
+  const [apiResponse, setApiResponse] = useState<Record<string, unknown> | null>(null);
+  const [useSimulation, setUseSimulation] = useState(false);
   const [manualTranscript, setManualTranscript] = useState("");
 
-  const socketRef          = useRef<WebSocket | null>(null);
-  const streamRef          = useRef<MediaStream | null>(null);
-  const audioCtxRef        = useRef<AudioContext | null>(null);
-  const processorRef       = useRef<ScriptProcessorNode | null>(null);
-  const timerRef           = useRef<ReturnType<typeof setInterval> | null>(null);
-  const waveRef            = useRef<ReturnType<typeof setInterval> | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const waveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finalTranscriptRef = useRef<string>("");
   const finalConfidenceRef = useRef<number>(0);
-  const terminateTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const terminatedRef      = useRef(false);
-  const verifiedRef        = useRef(false);
-  const stoppedRef         = useRef(false);
-  const verifyRef          = useRef<((t: string, c: number, m: boolean) => Promise<void>) | null>(null);
+  const terminateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const terminatedRef = useRef(false);
+  const verifiedRef = useRef(false);
+  const stoppedRef = useRef(false);
+  const verifyRef = useRef<((t: string, c: number, m: boolean) => Promise<void>) | null>(null);
 
   // ─── Waveform ──────────────────────────────────────────────────────────────
 
@@ -96,7 +102,7 @@ export default function VoiceChallenge({
   const stopAudio = useCallback(() => {
     processorRef.current?.disconnect();
     processorRef.current = null;
-    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current?.close().catch(() => { });
     audioCtxRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
@@ -115,9 +121,9 @@ export default function VoiceChallenge({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          session_id:                 sessionId,
-          transcript:                 t,
-          audio_confidence:           c,
+          session_id: sessionId,
+          transcript: t,
+          audio_confidence: c,
           multiple_speakers_detected: multiSpeaker,
         }),
       });
@@ -163,16 +169,16 @@ export default function VoiceChallenge({
     let cancelled = false;
     (async () => {
       try {
-        const res  = await fetch(`${apiBase}${endpoints.start}`, {
+        const res = await fetch(`${apiBase}${endpoints.start}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId }),
         });
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
-        setChallengePhrase(data.challenge_phrase);
-        setTimeout(() => addLog("success", `Challenge phrase: "${data.challenge_phrase}"`), 0);
+        if (!res.ok) throw new Error(data.data.detail || `HTTP ${res.status}`);
+        setChallengePhrase(data.data.challenge_phrase);
+        setTimeout(() => addLog("success", `Challenge phrase: "${data.data.challenge_phrase}"`), 0);
         setPhase("ready");
       } catch (err: unknown) {
         if (cancelled) return;
@@ -192,8 +198,8 @@ export default function VoiceChallenge({
 
   const startRecording = useCallback(async () => {
     terminatedRef.current = false;
-    verifiedRef.current   = false;
-    stoppedRef.current    = false;
+    verifiedRef.current = false;
+    stoppedRef.current = false;
     finalTranscriptRef.current = "";
     finalConfidenceRef.current = 0;
     setTranscript("");
@@ -218,14 +224,14 @@ export default function VoiceChallenge({
     // ── Real path: PCM16 via Web Audio API ──
     try {
       addLog("info", "Fetching fresh token...");
-      const tokenRes  = await fetch(`${apiBase}${endpoints.start}`, {
+      const tokenRes = await fetch(`${apiBase}${endpoints.start}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: sessionId }),
       });
       const tokenData = await tokenRes.json();
-      if (!tokenRes.ok) throw new Error(tokenData.detail || `HTTP ${tokenRes.status}`);
-      const wsUrl: string = tokenData.websocket_url;
+      if (!tokenRes.ok) throw new Error(tokenData.data.detail || `HTTP ${tokenRes.status}`);
+      const wsUrl: string = tokenData.data.websocket_url;
       addLog("info", "Token obtained — opening WebSocket");
 
       // Mic stream
@@ -283,9 +289,9 @@ export default function VoiceChallenge({
         // Send PCM16 chunks from ScriptProcessor
         processor.onaudioprocess = (e) => {
           if (ws.readyState !== WebSocket.OPEN) return;
-          const input    = e.inputBuffer.getChannelData(0);
+          const input = e.inputBuffer.getChannelData(0);
           const downsampled = downsampleBuffer(input, nativeSR, TARGET_SAMPLE_RATE);
-          const pcm      = float32ToPCM16(downsampled);
+          const pcm = float32ToPCM16(downsampled);
           ws.send(pcm);
         };
 
@@ -325,13 +331,13 @@ export default function VoiceChallenge({
   };
 
   const phaseLabel: Record<Phase, string> = {
-    starting:   "Starting voice session...",
-    ready:      "Ready — press record",
-    recording:  `Recording — ${timeLeft}s remaining`,
+    starting: "Starting voice session...",
+    ready: "Ready — press record",
+    recording: `Recording — ${timeLeft}s remaining`,
     processing: "Processing audio...",
-    verifying:  "Verifying transcript...",
-    done:       "Voice challenge complete",
-    error:      "Error occurred",
+    verifying: "Verifying transcript...",
+    done: "Voice challenge complete",
+    error: "Error occurred",
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -370,9 +376,9 @@ export default function VoiceChallenge({
           ))
         ) : (
           <div style={{ fontSize: "11px", color: "var(--vault-text-dim)", letterSpacing: "0.08em" }}>
-            {phase === "starting"                             ? "INITIALIZING..."  :
-             phase === "ready"                               ? "AWAITING INPUT"   :
-             phase === "processing" || phase === "verifying" ? "PROCESSING..."    : "—"}
+            {phase === "starting" ? "INITIALIZING..." :
+              phase === "ready" ? "AWAITING INPUT" :
+                phase === "processing" || phase === "verifying" ? "PROCESSING..." : "—"}
           </div>
         )}
       </div>

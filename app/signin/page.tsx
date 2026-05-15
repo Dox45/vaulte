@@ -79,7 +79,7 @@ export default function SignInPage() {
         <div className="relative z-10 w-full max-w-[420px] mx-auto flex flex-col gap-[40px]">
           <header className="text-center flex flex-col gap-[8px]">
             <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
-              <h1 className="text-[32px] font-bold leading-[40px] tracking-[-0.01em] text-[#121c2b]">Vaulte Commerce</h1>
+              <h1 className="text-[32px] font-bold leading-[40px] tracking-[-0.01em] text-[#121c2b]">Ada&apos;s Store</h1>
             </Link>
             <p className="text-[15px] leading-[24px] text-[#464555]">Sign in to your Storefront</p>
           </header>

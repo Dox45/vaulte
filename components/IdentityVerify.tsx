@@ -114,7 +114,7 @@ export default function IdentityVerify({
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(20px, 6vw, 28px)", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>
           Identity Verification
         </h2>
-        <p style={{ color: "var(--vault-text-dim)", fontSize: "12px" }}>
+        <p style={{ color: "var(--benchmark-text-dim)", fontSize: "12px" }}>
           NIN verification via Youverify — step 3 of 3
         </p>
       </div>
@@ -159,26 +159,26 @@ export default function IdentityVerify({
           <label style={labelStyle}>Selfie Image</label>
           <div
             style={{
-              border: "1px dashed var(--vault-border)",
+              border: "1px dashed var(--benchmark-border)",
               borderRadius: "2px",
               padding: "16px",
               textAlign: "center",
               cursor: "pointer",
-              background: selfie ? "rgba(0,230,118,0.04)" : "var(--vault-surface)",
-              borderColor: selfie ? "var(--vault-green)" : "var(--vault-border)",
+              background: selfie ? "rgba(0,230,118,0.04)" : "var(--benchmark-surface)",
+              borderColor: selfie ? "var(--benchmark-green)" : "var(--benchmark-border)",
               transition: "all 0.2s",
             }}
             onClick={() => fileInputRef.current?.click()}
           >
             {selfie ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                <img src={selfie} alt="Selfie preview" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%", border: "2px solid var(--vault-green)" }} />
-                <span style={{ fontSize: "11px", color: "var(--vault-green)" }}>✓ Image selected — tap to change</span>
+                <img src={selfie} alt="Selfie preview" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%", border: "2px solid var(--benchmark-green)" }} />
+                <span style={{ fontSize: "11px", color: "var(--benchmark-green)" }}>✓ Image selected — tap to change</span>
               </div>
             ) : (
               <div>
                 <div style={{ fontSize: "24px", marginBottom: "8px" }}>📷</div>
-                <div style={{ fontSize: "12px", color: "var(--vault-text-dim)" }}>Tap to upload or take a selfie</div>
+                <div style={{ fontSize: "12px", color: "var(--benchmark-text-dim)" }}>Tap to upload or take a selfie</div>
               </div>
             )}
           </div>
@@ -195,10 +195,10 @@ export default function IdentityVerify({
         {error && (
           <div style={{
             background: "rgba(255,61,87,0.08)",
-            color: "var(--vault-red)",
+            color: "var(--benchmark-red)",
             padding: "10px 14px",
             borderRadius: "2px",
-            border: "1px solid var(--vault-red)",
+            border: "1px solid var(--benchmark-red)",
             fontSize: "12px",
           }}>
             {error}
@@ -208,7 +208,7 @@ export default function IdentityVerify({
         <button
           type="submit"
           disabled={loading}
-          className="vault-btn vault-btn-primary"
+          className="benchmark-btn benchmark-btn-primary"
           style={{ width: "100%", opacity: loading ? 0.6 : 1, cursor: loading ? "not-allowed" : "pointer" }}
         >
           {loading ? "Verifying..." : "Verify Identity"}
@@ -220,7 +220,7 @@ export default function IdentityVerify({
 
 const labelStyle: React.CSSProperties = {
   display: "block",
-  color: "var(--vault-text-dim)",
+  color: "var(--benchmark-text-dim)",
   fontSize: "10px",
   letterSpacing: "0.1em",
   marginBottom: "6px",
@@ -230,9 +230,9 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
   borderRadius: "2px",
-  border: "1px solid var(--vault-border)",
-  background: "var(--vault-surface)",
-  color: "var(--vault-white)",
+  border: "1px solid var(--benchmark-border)",
+  background: "var(--benchmark-surface)",
+  color: "var(--benchmark-white)",
   fontSize: "13px",
   outline: "none",
   fontFamily: "DM Mono, monospace",

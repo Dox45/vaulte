@@ -64,16 +64,16 @@
 
 
 :root {
-  --vault-black: #0a0a0a;
-  --vault-white: #f5f2ec;
-  --vault-green: #00e676;
-  --vault-green-dim: rgba(0, 230, 118, 0.1);
-  --vault-amber: #ffab00;
-  --vault-red: #ff3d57;
-  --vault-surface: #111111;
-  --vault-border: #1e1e1e;
-  --vault-muted: #3a3a3a;
-  --vault-text-dim: #888;
+  --benchmark-black: #0a0a0a;
+  --benchmark-white: #f5f2ec;
+  --benchmark-green: #00e676;
+  --benchmark-green-dim: rgba(0, 230, 118, 0.1);
+  --benchmark-amber: #ffab00;
+  --benchmark-red: #ff3d57;
+  --benchmark-surface: #111111;
+  --benchmark-border: #1e1e1e;
+  --benchmark-muted: #3a3a3a;
+  --benchmark-text-dim: #888;
 }
 
 .theme-professional {
@@ -92,13 +92,13 @@
   --v-error: #ef4444;
 
   /* Map existing component variables */
-  --vault-black: #f0f4f8;
-  --vault-white: #1a202c;
-  --vault-green: var(--v-primary);
-  --vault-green-dim: rgba(99, 102, 241, 0.1);
-  --vault-surface: #ffffff;
-  --vault-border: rgba(99, 102, 241, 0.1);
-  --vault-text-dim: var(--v-muted);
+  --benchmark-black: #f0f4f8;
+  --benchmark-white: #1a202c;
+  --benchmark-green: var(--v-primary);
+  --benchmark-green-dim: rgba(99, 102, 241, 0.1);
+  --benchmark-surface: #ffffff;
+  --benchmark-border: rgba(99, 102, 241, 0.1);
+  --benchmark-text-dim: var(--v-muted);
 }
 
 
@@ -111,8 +111,8 @@
 
 html,
 body {
-  background: var(--vault-black);
-  color: var(--vault-white);
+  background: var(--benchmark-black);
+  color: var(--benchmark-white);
   font-family: 'DM Mono', monospace;
   margin: 0;
   padding: 0;
@@ -186,7 +186,7 @@ body {
 .cursor-blink::after {
   content: '_';
   animation: blink-cursor 1s infinite;
-  color: var(--vault-green);
+  color: var(--benchmark-green);
 }
 
 .recording-pulse {
@@ -200,8 +200,8 @@ canvas {
   max-width: 100%;
 } */
 
-/* ── Vault button base ──────────────────────────────────────── */
-.vault-btn {
+/* ── Benchmark button base ──────────────────────────────────────── */
+.benchmark-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -213,51 +213,51 @@ canvas {
   border-radius: 2px;
 }
 
-.vault-btn-primary {
-  background: var(--vault-green);
+.benchmark-btn-primary {
+  background: var(--benchmark-green);
   color: #0a0a0a;
   font-weight: 700;
   padding: 12px 28px;
   font-size: 12px;
 }
 
-.vault-btn-primary:hover {
+.benchmark-btn-primary:hover {
   filter: brightness(1.1);
 }
 
-.vault-btn-ghost {
+.benchmark-btn-ghost {
   background: transparent;
-  color: var(--vault-text-dim);
-  border: 1px solid var(--vault-border);
+  color: var(--benchmark-text-dim);
+  border: 1px solid var(--benchmark-border);
   padding: 10px 20px;
   font-size: 11px;
 }
 
-.vault-btn-ghost:hover {
-  border-color: var(--vault-green);
-  color: var(--vault-green);
+.benchmark-btn-ghost:hover {
+  border-color: var(--benchmark-green);
+  color: var(--benchmark-green);
 }
 
 /* ── Responsive layout helpers ──────────────────────────────── */
-.vault-main-grid {
+.benchmark-main-grid {
   display: grid;
   grid-template-columns: 1fr 340px;
   min-height: calc(100vh - 57px);
 }
 
-.vault-log-panel {
-  border-left: 1px solid var(--vault-border);
+.benchmark-log-panel {
+  border-left: 1px solid var(--benchmark-border);
   overflow: hidden;
 }
 
 @media (max-width: 768px) {
-  .vault-main-grid {
+  .benchmark-main-grid {
     grid-template-columns: 1fr;
   }
 
-  .vault-log-panel {
+  .benchmark-log-panel {
     border-left: none;
-    border-top: 1px solid var(--vault-border);
+    border-top: 1px solid var(--benchmark-border);
     max-height: 280px;
   }
 }

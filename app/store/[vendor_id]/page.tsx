@@ -96,7 +96,7 @@ export default function Storefront() {
       </div>
 
       <div className="text-center mt-12">
-        <p className="text-sm text-slate-500 font-medium">Powered by <Link href="/" className="text-indigo-600 font-bold hover:underline">Vaulte Commerce Infrastructure</Link></p>
+        <p className="text-sm text-slate-500 font-medium">Powered by <Link href="/" className="text-indigo-600 font-bold hover:underline">Benchmark Commerce Infrastructure</Link></p>
       </div>
     </main>
   );

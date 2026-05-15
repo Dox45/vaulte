@@ -108,7 +108,7 @@ export default function VerificationPage() {
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Identity Verified</h1>
           <p className="text-slate-600 mb-10 leading-relaxed">Your verification is complete. The requesting partner has been notified of your status.</p>
           <div className="pt-6 border-t border-slate-100">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">Secure Infrastructure by Vaulte</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">Secure Infrastructure by Benchmark</div>
           </div>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function VerificationPage() {
             <span className="text-white font-black text-xl">V</span>
           </div>
           <div>
-            <span className="font-bold tracking-tight text-xl text-slate-900">Vaulte <span className="text-indigo-600">Verify</span></span>
+            <span className="font-bold tracking-tight text-xl text-slate-900">Benchmark <span className="text-indigo-600">Verify</span></span>
             <div className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Secure Protocol 2.0</div>
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function VerificationPage() {
         }
 
         /* Override dark mode defaults for professional theme */
-        .theme-professional .vault-btn-primary {
+        .theme-professional .benchmark-btn-primary {
           background: #6366f1 !important;
           color: white !important;
           border-radius: 12px !important;

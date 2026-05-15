@@ -72,7 +72,7 @@ export default function SignUpPage() {
         <div className="relative z-10 w-full max-w-[440px]">
           <div className="flex flex-col items-center mb-[2.5rem]">
             <Link href="/" className="inline-block text-center hover:opacity-90 transition-opacity">
-              <h1 className="text-[24px] font-extrabold tracking-tight text-[#151d1e]">Vaulte Commerce</h1>
+              <h1 className="text-[24px] font-extrabold tracking-tight text-[#151d1e]">Ada&apos;s Store</h1>
             </Link>
             <p className="text-[#3b494b] mt-[0.5rem] text-[14px] font-semibold tracking-[0.02em]">
               Start selling in minutes.
