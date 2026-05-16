@@ -163,10 +163,10 @@ export function BenchmarkLandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[4rem] items-start relative z-10 pt-4">
             <div className="flex flex-col gap-[1.5rem] pt-6 md:pt-20">
               <h1 className="text-[48px] font-extrabold leading-[1.1] tracking-[-0.04em] text-[#151d1e]">
-                AI-Powered Vendor Trust & <span className="text-[#635bff]">Escrow Infrastructure</span>
+                The Infrastructure <span className="text-[#635bff]">For Credible Commerce In Africa</span>
               </h1>
               <p className="text-[18px] leading-[1.6] tracking-[-0.01em] text-[#3b494b] max-w-lg">
-                Built on Squad's API stack, Benchmark solves the <strong className="text-[#151d1e]">₦5.2 billion e-commerce fraud problem</strong> by verifying vendors before they receive a single payment.
+                Powered by Squad's API stack, Benchmark solves the <strong className="text-[#151d1e]">₦5.2 billion e-commerce fraud problem</strong> by verifying vendors before they receive a single payment.
               </p>
               <div className="flex flex-wrap gap-[1.5rem] mt-[1rem]">
                 <button
