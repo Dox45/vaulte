@@ -1,6 +1,11 @@
 "use client";
 import { useEffect, useRef } from "react";
-import type { LogEntry } from "@/app/page";
+
+inteface LogEntry {
+  ts: string;
+  level: "info" | "success" | "error" | "warn";
+  msg: string;
+}
 
 interface Props {
   logs: LogEntry[];
