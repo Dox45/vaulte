@@ -85,7 +85,7 @@ const STEP_META: Record<ChallengeStep, { label: string; icon: string; hint: stri
   turn_left: { label: "Turn Left", icon: "←", hint: "Turn your head to the left" },
   turn_right: { label: "Turn Right", icon: "→", hint: "Turn your head to the right" },
   nod: { label: "Nod", icon: "↕", hint: "Nod your head up and down" },
-  smile: { label: "Smile", icon: "◡", hint: "Give a natural smile" },
+  smile: { label: "Open mouth", icon: "◡", hint: "Give a natural smile with mouth open" },
 };
 
 // ── Error code → user-facing message ──────────────────────────────────────────
@@ -370,16 +370,29 @@ export default function LivenessCheck({
   );
 
   // ── Smile detection ────────────────────────────────────────────────────────
-  const detectSmile = useCallback(
-    (lms: { x: number; y: number; z: number }[]): boolean => {
-      if (!lms || lms.length < 292) return false;
-      const mouthWidth = Math.abs(lms[291].x - lms[61].x);
-      const mouthHeight = Math.abs(lms[14].y - lms[13].y);
-      return mouthWidth / (mouthHeight + 0.001) > 4.5;
-    },
-    []
-  );
+  // const detectSmile = useCallback(
+  //   (lms: { x: number; y: number; z: number }[]): boolean => {
+  //     if (!lms || lms.length < 292) return false;
+  //     const mouthWidth = Math.abs(lms[291].x - lms[61].x);
+  //     const mouthHeight = Math.abs(lms[14].y - lms[13].y);
+  //     return mouthWidth / (mouthHeight + 0.001) > 4.5;
+  //   },
+  //   []
+  // );
 
+  const detectSmile = useCallback(
+  (lms: { x: number; y: number; z: number }[]): boolean => {
+    if (!lms || lms.length < 292) return false;
+    
+    const mouthWidth = Math.abs(lms[291].x - lms[61].x);
+    const mouthHeight = Math.abs(lms[14].y - lms[13].y);
+    const ratio = mouthWidth / (mouthHeight + 0.001);
+    const mouthOpen = mouthHeight > 0.03; // must open mouth noticeably
+    
+    return ratio > 3.5 && mouthOpen;
+  },
+  []
+);
   // ── Entropy sampling ───────────────────────────────────────────────────────
   const sampleEntropy = useCallback(() => {
     const canvas = entropyCanvasRef.current;
