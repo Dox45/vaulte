@@ -1,42 +1,45 @@
+// app/StripeHeroVisual.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, ArrowUpRight, ShieldCheck, Terminal } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Terminal, UserCheck, DollarSign, AlertCircle } from "lucide-react";
 
 interface LogItem {
   id: string;
   type: string;
   message: string;
-  amount?: string;
+  detail?: string;
   status: string;
   time: string;
   icon: any;
 }
 
+// Realistic logs that match Benchmark's actual flows
 const INITIAL_LOGS: LogItem[] = [
   {
     id: "log-1",
-    type: "payment",
-    message: "Escrow funded: Project Alpha",
-    amount: "+$25,000.00",
-    status: "200 OK",
+    type: "escrow",
+    message: "Escrow funded via Squad VA",
+    detail: "₦45,000.00",
+    status: "secured",
     time: "Just now",
     icon: CheckCircle2,
   },
   {
     id: "log-2",
     type: "api",
-    message: "POST /v1/escrow/release",
-    status: "succeeded",
+    message: "POST /escrow/create",
+    status: "201 Created",
     time: "2s ago",
     icon: Terminal,
   },
   {
     id: "log-3",
     type: "verify",
-    message: "Identity Verification: Tier 3",
-    status: "verified",
+    message: "Vendor verification passed",
+    detail: "Face liveness + NIN match",
+    status: "Trust Score: 82",
     time: "5s ago",
     icon: ShieldCheck,
   },
@@ -44,41 +47,56 @@ const INITIAL_LOGS: LogItem[] = [
 
 const ROTATING_EVENTS = [
   {
-    type: "payout",
-    message: "Payout routed to dest_8829",
-    amount: "+$12,450.00",
-    status: "completed",
-    icon: ArrowUpRight,
+    type: "escrow",
+    message: "Funds released to vendor",
+    detail: "₦12,450.00",
+    status: "transfer.success",
+    icon: DollarSign,
   },
   {
-    type: "payment",
-    message: "Escrow deposit: Contract #402",
-    amount: "+$8,900.00",
-    status: "secured",
-    icon: CheckCircle2,
-  },
-  {
-    type: "api",
-    message: "GET /v1/trust/contracts",
+    type: "webhook",
+    message: "Squad webhook received",
+    detail: "charge.successful",
     status: "200 OK",
     icon: Terminal,
   },
   {
     type: "verify",
-    message: "Smart Contract Automated Audit",
-    status: "passed",
+    message: "AI liveness verification",
+    detail: "Blink + head turn detected",
+    status: "confidence: 0.94",
+    icon: UserCheck,
+  },
+  {
+    type: "dispute",
+    message: "Dispute auto-resolved",
+    detail: "distilBERT confidence: 91%",
+    status: "refund_triggered",
+    icon: AlertCircle,
+  },
+  {
+    type: "escrow",
+    message: "New escrow created",
+    detail: "₦28,500.00",
+    status: "pending",
+    icon: CheckCircle2,
+  },
+  {
+    type: "webhook",
+    message: "transfer.success",
+    detail: "Vendor account credited",
+    status: "completed",
     icon: ShieldCheck,
   },
 ];
 
 export function StripeHeroVisual() {
   const [logs, setLogs] = useState<LogItem[]>(INITIAL_LOGS);
-  const [balance, setBalance] = useState(42850210);
+  const [totalProtected, setTotalProtected] = useState(285420);
 
   useEffect(() => {
     let counter = 0;
     const interval = setInterval(() => {
-      // Pick next event
       const template = ROTATING_EVENTS[counter % ROTATING_EVENTS.length];
       counter++;
 
@@ -86,13 +104,12 @@ export function StripeHeroVisual() {
         id: `event-${Date.now()}`,
         type: template.type,
         message: template.message,
-        amount: template.amount,
+        detail: template.detail,
         status: template.status,
         time: "Just now",
         icon: template.icon,
       };
 
-      // Add new log at top, keep max 4 items
       setLogs((prev) => {
         const updated = prev.map((item) => ({
           ...item,
@@ -101,97 +118,87 @@ export function StripeHeroVisual() {
         return [newLog, ...updated.slice(0, 3)];
       });
 
-      // Increment balance slightly to simulate live volume
-      if (template.amount) {
-        const numeric = parseFloat(template.amount.replace(/[^0-9.]/g, ""));
+      if (template.detail && template.detail.startsWith("₦")) {
+        const numeric = parseInt(template.detail.replace(/[^0-9]/g, ""), 10);
         if (!isNaN(numeric)) {
-          setBalance((b) => b + numeric);
+          setTotalProtected((prev) => prev + numeric);
         }
       }
-    }, 3000);
+    }, 3500);
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="relative w-full max-w-md mx-auto lg:max-w-none perspective-1000 lg:w-[90%]">
-      {/* Spectacular Glowing Gradients Backdrop */}
-      <div className="absolute -inset-4 bg-gradient-to-tr from-primary/30 via-secondary-container/20 to-purple-500/20 rounded-3xl blur-xl opacity-60 animate-pulse -z-10" />
+    <div className="relative w-full max-w-sm sm:max-w-md mx-auto lg:max-w-none">
+      {/* Glowing background effect */}
+      <div className="absolute -inset-4 bg-gradient-to-tr from-[#635bff]/30 via-[#635bff]/10 to-purple-500/20 rounded-3xl blur-xl opacity-60 animate-pulse -z-10" />
 
-      {/* Overlapping Container Layout */}
-      <div className="relative grid grid-cols-1 gap-4">
-        
-        {/* Top Code Window (Stripe IDE Style) */}
+      <div className="relative grid grid-cols-1 gap-3 sm:gap-4">
+        {/* Code Window */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="bg-[#0D1117] border border-white/10 rounded-xl overflow-hidden shadow-2xl relative z-20"
+          className="bg-[#0D1117] border border-white/10 rounded-xl overflow-hidden shadow-2xl"
         >
-          {/* Mac Header Bar */}
-          <div className="flex items-center justify-between px-3 py-2.5 bg-white/[0.02] border-b border-white/[0.05]">
+          {/* Mac Header */}
+          <div className="flex items-center justify-between px-3 py-2 bg-white/[0.02] border-b border-white/[0.05]">
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]" />
               <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
               <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F]" />
             </div>
-            <span className="text-[11px] font-mono text-zinc-400 font-medium">create_escrow.js</span>
-            <div className="w-10" /> {/* Spacer for centering */}
+            <span className="text-[10px] sm:text-[11px] font-mono text-zinc-400 font-medium truncate px-2">squadbenchjs → Benchmark</span>
+            <div className="w-6 sm:w-10" />
           </div>
 
-          {/* Syntax Highlighted Code Snippet */}
-          <div className="p-4 font-mono text-[11px] leading-relaxed overflow-x-auto select-none">
-            <div className="text-zinc-300">
-              <span className="text-purple-400">const</span> benchmark = <span className="text-blue-400">require</span>(<span className="text-emerald-400">&apos;@benchmark/sdk&apos;</span>);
-            </div>
-            <div className="text-zinc-500 mt-2">// Create a new secure transaction</div>
-            <div className="text-zinc-300 mt-0.5">
-              <span className="text-purple-400">const</span> response = <span className="text-purple-400">await</span> benchmark.transactions.<span className="text-amber-400">create</span>({"({"});
-            </div>
-            <div className="text-zinc-300 pl-3">
-              amount: <span className="text-orange-400">15000</span>,
-            </div>
-            <div className="text-zinc-300 pl-3">
-              currency: <span className="text-emerald-400">&apos;USD&apos;</span>,
-            </div>
-            <div className="text-zinc-300 pl-3">
-              verify_identity: <span className="text-purple-400">true</span>,
-            </div>
-            <div className="text-zinc-300 pl-3">
-              metadata: {"{"} order_id: <span className="text-emerald-400">&apos;BC-9173&apos;</span> {"}"}
-            </div>
-            <div className="text-zinc-300">{"});"}</div>
-            <div className="text-zinc-500 mt-2">// Output response</div>
-            <div className="text-zinc-300 mt-0.5">
-              <span className="text-blue-400">console</span>.<span className="text-amber-400">log</span>(response.status); <span className="text-zinc-500">// =&gt; &apos;confirmed&apos;</span>
-            </div>
+          {/* Code */}
+          <div className="p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed overflow-x-auto">
+            <pre className="text-zinc-300 whitespace-pre-wrap">
+{`const Benchmark = require('squadbenchjs');
+
+const benchmark = new Benchmark({
+  apiKey: process.env.BENCHMARK_API_KEY
+});
+
+// Create escrow with Squad VA
+const escrow = await benchmark.escrow.create({
+  vendor_id: 'vendor_abc123',
+  amount: 45000,
+  item_description: 'Smartphone',
+  buyer_phone: '+2348012345678'
+});
+
+console.log(escrow.checkout_url);
+// → https://checkout.squadco.com/pay/...`}
+            </pre>
           </div>
         </motion.div>
 
-        {/* Bottom Interactive API / Terminal Log Stream */}
+        {/* Live Activity Feed */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-          className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-4 shadow-xl relative z-10 -mt-12 ml-3 mr-[-8px]"
+          className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-3 sm:p-4 shadow-xl -mt-8 sm:-mt-10 mx-2 sm:mx-3"
         >
-          {/* Header Stats */}
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-800 gap-2">
             <div>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-geist">Live Trust Volume</p>
-              <motion.p className="text-xl font-bold font-geist text-primary mt-0.5">
-                ${balance.toLocaleString()}
-                <span className="text-[11px] text-zinc-400 font-normal ml-0.5">.00</span>
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Total Escrow Protected</p>
+              <motion.p className="text-lg sm:text-xl font-bold text-[#151d1e]">
+                ₦{totalProtected.toLocaleString()}
               </motion.p>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full text-[11px] font-medium">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 rounded-full text-emerald-600 text-[10px] sm:text-[11px] font-medium self-start sm:self-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              API Connected
+              Squad API Connected
             </div>
           </div>
 
-          {/* Animated Log Feed */}
-          <div className="space-y-2 h-[152px] overflow-hidden select-none">
+          {/* Log Feed */}
+          <div className="space-y-2 h-[140px] sm:h-[152px] overflow-hidden">
             <AnimatePresence initial={false}>
               {logs.map((log) => {
                 const IconComponent = log.icon;
@@ -203,38 +210,38 @@ export function StripeHeroVisual() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
                     transition={{ duration: 0.35, type: "spring", bounce: 0.1 }}
-                    className="flex items-center justify-between p-2 px-2.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800/80"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800/80 gap-1 sm:gap-0"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                        <IconComponent className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#635bff]/10 flex items-center justify-center text-[#635bff] shrink-0">
+                        <IconComponent className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 truncate font-geist leading-tight">
+                        <p className="text-[10px] sm:text-[11px] font-semibold text-zinc-900 truncate">
                           {log.message}
                         </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[9px] text-zinc-400">{log.time}</span>
-                          <span className="text-[9px] text-zinc-300 dark:text-zinc-600">•</span>
-                          <span className="text-[9px] font-mono text-zinc-500 dark:text-zinc-400 font-medium">
-                            {log.status}
-                          </span>
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+                          <span className="text-[8px] sm:text-[9px] text-zinc-400">{log.time}</span>
+                          {log.detail && (
+                            <>
+                              <span className="text-[8px] sm:text-[9px] text-zinc-300">•</span>
+                              <span className="text-[8px] sm:text-[9px] font-mono text-[#635bff]">{log.detail}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
-
-                    {log.amount && (
-                      <span className="text-[11px] font-bold font-mono text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5">
-                        {log.amount}
+                    <div className="ml-8 sm:ml-0">
+                      <span className="text-[9px] sm:text-[10px] font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                        {log.status}
                       </span>
-                    )}
+                    </div>
                   </motion.div>
                 );
               })}
             </AnimatePresence>
           </div>
         </motion.div>
-
       </div>
     </div>
   );

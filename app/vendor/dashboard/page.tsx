@@ -155,7 +155,7 @@
 //                   <div className="w-6 h-6 bg-[#635bff] text-white flex items-center justify-center rounded text-[10px] font-bold flex-shrink-0">
 //                     AS
 //                   </div>
-//                   <span className="text-[14px] font-semibold tracking-tight">Ada's Store</span>
+//                   <span className="text-[14px] font-semibold tracking-tight">Welcome Back!</span>
 //                 </div>
 //                 <button 
 //                   onClick={() => setIsSidebarOpen(false)}
@@ -637,7 +637,7 @@ export default function VendorDashboard() {
           <div className="w-6 h-6 bg-[#635bff] text-white flex items-center justify-center rounded text-[10px] font-bold flex-shrink-0">
             AS
           </div>
-          <span className="text-[14px] font-semibold tracking-tight">Ada's Store</span>
+          <span className="text-[14px] font-semibold tracking-tight">Welcome back!</span>
         </div>
         <button
           onClick={() => setIsSidebarOpen(false)}
